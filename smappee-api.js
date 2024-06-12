@@ -2,6 +2,7 @@ var http = require('http');
 var request = require('request');
 var querystring = require('querystring');
 var moment = require('moment');
+const fs = require('node:fs');
 
 function SmappeeAPI(settings) {
 
@@ -10,7 +11,7 @@ function SmappeeAPI(settings) {
     var username = settings.username;
     var password = settings.password;
 
-    this.debug = settings.debug || false;
+    this.debug = settings.debug || true;
 
     var thisObject = this;
 
@@ -34,7 +35,7 @@ function SmappeeAPI(settings) {
      * @param handler           function that will be called when request is completed.
      */
     this.getServiceLocations = function(handler) {
-        _get('https://app1pub.smappee.net/dev/v1/servicelocation', {}, handler);
+        _get('https://app1pub.smappee.net/dev/v3/servicelocation', {}, handler);
     };
 
     /**
@@ -46,7 +47,7 @@ function SmappeeAPI(settings) {
      * @param handler               function that will be called when request is completed.
      */
     this.getServiceLocationInfo = function(serviceLocationId, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v1/servicelocation/' + serviceLocationId + '/info';
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/info';
         _get(url, {}, handler);
     };
 
@@ -62,7 +63,7 @@ function SmappeeAPI(settings) {
      * @param handler               function that will be called when request is completed.
      */
     this.getConsumptions = function(serviceLocationId, aggregation, from, to, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v1/servicelocation/' + serviceLocationId + '/consumption';
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/consumption';
         var fields = {
             aggregation: aggregation,
             from: from,
@@ -72,7 +73,7 @@ function SmappeeAPI(settings) {
     };
 
     this.getLatestConsumption = function(serviceLocationId, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v1/servicelocation/' + serviceLocationId + '/consumption';
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/consumption';
         var fields = {
             aggregation: this.AGGREGATION_TYPES.MINUTES,
             from: moment().subtract(30, 'minutes').utc().valueOf(),
@@ -88,7 +89,7 @@ function SmappeeAPI(settings) {
     };
 
     this.getMonthlyConsumptionsForLastYear = function(serviceLocationId, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v1/servicelocation/' + serviceLocationId + '/consumption';
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/consumption';
         var fields = {
             aggregation: this.AGGREGATION_TYPES.MONTHLY,
             from: moment().subtract(1, 'year').utc().valueOf(),
@@ -98,7 +99,7 @@ function SmappeeAPI(settings) {
     };
 
     this.getEvents = function(serviceLocationId, applianceId, from, to, maxNumber, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v1/servicelocation/' + serviceLocationId + '/events';
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/events';
         var fields = {
             applienceId: applianceId,
             from: from,
@@ -109,13 +110,13 @@ function SmappeeAPI(settings) {
     };
 
     this.turnActuatorOn = function(serviceLocationId, actuatorId, duration, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v1/servicelocation/' + serviceLocationId + '/actuator/' + actuatorId + '/on';
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/actuator/' + actuatorId + '/on';
 
         _post(url, "{'duration': " + duration + "}", handler);
     };
 
     this.turnActuatorOff = function(serviceLocationId, actuatorId, duration, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v1/servicelocation/' + serviceLocationId + '/actuator/' + actuatorId + '/off';
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/actuator/' + actuatorId + '/off';
         _post(url, "{'duration': " + duration + "}", handler);
     };
 
@@ -124,37 +125,67 @@ function SmappeeAPI(settings) {
 
     var _getAccessToken = function(handler) {
         if (typeof accessToken == 'undefined') {
-            var body = {
-                client_id: clientId,
-                client_secret: clientSecret,
-                username: username,
-                password: password,
-                grant_type: 'password'
-            };
-
-            if (thisObject.debug) {
-                console.log("Making oAuth call...");
-            }
-
-            var options =  {
-                url: 'https://app1pub.smappee.net/dev/v1/oauth2/token',
-                headers: {
-                    'Host': 'app1pub.smappee.net'
-                },
-                form: body
-            };
-
-            request.post(options, function (err, httpResponse, body) {
-                if (err) {
-                    return console.error('Request failed:', err);
-                }
+            
+            const tokenFile = fs.readFileSync('./token.json');
+            if (tokenFile!=null){
                 if (thisObject.debug) {
-                    console.log('Server responded with:', body);
+                    console.log("Read token from file ");
                 }
+                var existingToken = JSON.parse(tokenFile);
+                console.log(existingToken);
+    
+                //save time in seconds and compare 
 
-                accessToken = JSON.parse(body);
-                handler(accessToken);
-            });
+                if (existingToken.refresh_token.length>0){
+                    //token exist
+                    if (thisObject.debug) {
+                        console.log("SKIP oAuth call, token still valid.");
+                    }
+                    accessToken=existingToken;
+                    handler(accessToken);
+                } else {
+                    var body = {
+                        client_id: clientId,
+                        client_secret: clientSecret,
+                        username: username,
+                        password: password,
+                        grant_type: 'password'
+                    };
+        
+                    if (thisObject.debug) {
+                        console.log("Making oAuth call...");
+                    }
+        
+                    var options =  {
+                        url: 'https://app1pub.smappee.net/dev/v3/oauth2/token',
+                        headers: {
+                            'Host': 'app1pub.smappee.net'
+                        },
+                        form: body
+                    };
+        
+                    request.post(options, function (err, httpResponse, body) {
+                        if (err) {
+                            return console.error('Request failed:', err);
+                        }
+                        if (thisObject.debug) {
+                            console.log('Server responded with:', body);
+                        }
+        
+                        accessToken = JSON.parse(body);
+                        
+                        fs.writeFileSync('./token.json', body, err => {
+                            if (err) {
+                              console.error(err);
+                            } else {
+                              // file written successfully
+                            }
+                          });
+                        handler(accessToken);
+                    });
+                }
+            }
+            
         } else {
             handler(accessToken)
         }
