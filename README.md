@@ -1,3 +1,5 @@
+Please note : this fork is probably not working at this stage. I'm trying to edit it to get the refresh token working and add the EV Line charging session stuff. I did never code in Node JS so I'll see what I can do...
+
 # Smappee-NodeJS
 Smappee nodejs project to read smappee data.
 
