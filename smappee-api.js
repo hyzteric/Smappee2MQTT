@@ -122,72 +122,85 @@ function SmappeeAPI(settings) {
 
 
     // HELPER METHODS ++++++++++++++++++++++++++++++++++++++++
-
+  
     var _getAccessToken = function(handler) {
-        if (typeof accessToken == 'undefined') {
-            
-            const tokenFile = fs.readFileSync('./token.json');
-            if (tokenFile!=null){
-                if (thisObject.debug) {
-                    console.log("Read token from file ");
-                }
-                var existingToken = JSON.parse(tokenFile);
-                console.log(existingToken);
-    
-                //save time in seconds and compare 
+        var tokenFile = null;
+        var existingToken = null;
+        let timestampNow = Date.now();
+        var timestampNowSeconds = timestampNow/1000;
 
-                if (existingToken.refresh_token.length>0){
-                    //token exist
-                    if (thisObject.debug) {
-                        console.log("SKIP oAuth call, token still valid.");
-                    }
-                    accessToken=existingToken;
-                    handler(accessToken);
-                } else {
-                    var body = {
-                        client_id: clientId,
-                        client_secret: clientSecret,
-                        username: username,
-                        password: password,
-                        grant_type: 'password'
-                    };
-        
-                    if (thisObject.debug) {
-                        console.log("Making oAuth call...");
-                    }
-        
-                    var options =  {
-                        url: 'https://app1pub.smappee.net/dev/v3/oauth2/token',
-                        headers: {
-                            'Host': 'app1pub.smappee.net'
-                        },
-                        form: body
-                    };
-        
-                    request.post(options, function (err, httpResponse, body) {
-                        if (err) {
-                            return console.error('Request failed:', err);
-                        }
-                        if (thisObject.debug) {
-                            console.log('Server responded with:', body);
-                        }
-        
-                        accessToken = JSON.parse(body);
-                        
-                        fs.writeFileSync('./token.json', body, err => {
-                            if (err) {
-                              console.error(err);
-                            } else {
-                              // file written successfully
-                            }
-                          });
-                        handler(accessToken);
-                    });
-                }
+        if (fs.existsSync('./token.json') && fs.existsSync('./tokenBirth.txt')) {
+            tokenFile=fs.readFileSync('./token.json');
+            existingToken = JSON.parse(tokenFile);
+            if (thisObject.debug) {
+                console.log("existingToken : "+tokenFile);
             }
-            
+            var tokenBirth=fs.readFileSync('./tokenBirth.txt');
+            var tokenDeath = Number(tokenBirth)+existingToken.expires_in-60; //token death with 60sec threshold
+            if (tokenDeath<timestampNowSeconds){
+                //token expired or less than 60 secs remaining
+                if (thisObject.debug) {
+                    console.log("Token expired : "+tokenDeath);
+                    console.log("Time is now : "+timestampNowSeconds);
+                    //TODO: Request refresh token instead of new token
+                    console.log("TODO : Must request refresh token instead of new token");
+                }
+                accessToken=null;
+            } else {
+                accessToken=existingToken;
+            }
+        } 
+
+        if (accessToken!=null){
+            handler(accessToken);
         } else {
-            handler(accessToken)
+            var body = {
+                client_id: clientId,
+                client_secret: clientSecret,
+                username: username,
+                password: password,
+                grant_type: 'password'
+            };
+
+            if (thisObject.debug) {
+                console.log("Making oAuth call...");
+            }
+
+            var options =  {
+                url: 'https://app1pub.smappee.net/dev/v3/oauth2/token',
+                headers: {
+                    'Host': 'app1pub.smappee.net'
+                },
+                form: body
+            };
+
+            request.post(options, function (err, httpResponse, body) {
+                if (err) {
+                    return console.error('Request failed:', err);
+                }
+                if (thisObject.debug) {
+                    console.log('Server responded with:', body);
+                }
+
+                accessToken = JSON.parse(body);
+            
+                fs.writeFileSync('./token.json', body, err => {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        // file written successfully
+                    }
+                });
+
+                fs.writeFileSync('./tokenBirth.txt', timestampNowSeconds.toString(), err => {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        // file written successfully
+                    }
+                });
+                handler(accessToken);
+            });
         }
     };
 
