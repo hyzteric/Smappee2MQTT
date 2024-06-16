@@ -1,18 +1,19 @@
 {
   "name": "smappee-nodejs",
-  "version": "1.0.0",
+  "version": "2.0",
   "main": "./smappee-api.js",
-  "author": "CONNCTED",
+  "author": "hyzteric",
   "keywords": [
     "smappee",
-    "energy monitoring"
+    "energy monitoring",
+	"mqtt"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/CONNCTED/Smappee-NodeJS.git"
+    "url": "git://github.com/hyzteric/Smappee-NodeJS.git"
   },
   "bugs": {
-    "url": "http://github.com/CONNCTED/Smappee-NodeJS/issues"
+    "url": "http://github.com/hyzteric/Smappee-NodeJS/issues"
   },
   "dependencies": {
     "moment": "^2.10.6",

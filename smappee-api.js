@@ -3,6 +3,7 @@ var request = require('request');
 var querystring = require('querystring');
 var moment = require('moment');
 const fs = require('node:fs');
+const mqtt = require('mqtt');
 
 function SmappeeAPI(settings) {
 
@@ -10,8 +11,11 @@ function SmappeeAPI(settings) {
     var clientSecret = settings.clientSecret;
     var username = settings.username;
     var password = settings.password;
+    var mqtt_server = settings.mqtt_server;
+    var mqtt_port = settings.mqtt_port;
+    var mqtt_baseTopic = settings.mqtt_baseTopic;
 
-    this.debug = settings.debug || true;
+    this.debug = settings.debug || false;
 
     var thisObject = this;
 
@@ -69,20 +73,51 @@ function SmappeeAPI(settings) {
             from: from,
             to: to
         };
-        _get(url, fields, handler);
+        //_get(url, fields, handler);
+        _get(url, fields, function(output) {
+            if (thisObject.debug) {
+                console.log("getConsumptions output : "+ JSON.stringify(output));
+            }
+
+            if (output!=null) {
+                if (thisObject.debug) {
+                    console.log("publishing getConsumptions output to mqtt");
+                }
+                _publishMQTT(mqtt_baseTopic+"consumptions",JSON.stringify(output));
+                handler(output);
+            } else {
+                if (thisObject.debug) {
+                    console.log("getConsumptions output null");
+                }
+                _publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
+                handler(undefined);
+            }
+        });
     };
 
     this.getLatestConsumption = function(serviceLocationId, handler) {
         var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/consumption';
         var fields = {
             aggregation: this.AGGREGATION_TYPES.MINUTES,
-            from: moment().subtract(30, 'minutes').utc().valueOf(),
-            to: moment().add(30, 'minutes').utc().valueOf()
+            from: moment().subtract(20, 'minutes').utc().valueOf(),
+            to: moment().add(5, 'minutes').utc().valueOf()
         };
         _get(url, fields, function(output) {
+            if (thisObject.debug) {
+                console.log("getConsumptions output : "+ JSON.stringify(output));
+            }
+
             if (output.consumptions.length > 0) {
+                if (thisObject.debug) {
+                    console.log("publishing getConsumptions output to mqtt");
+                }
+                _publishMQTT(mqtt_baseTopic+"consumptions",JSON.stringify(output.consumptions[output.consumptions.length - 1]));
                 handler(output.consumptions[output.consumptions.length - 1]);
             } else {
+                if (thisObject.debug) {
+                    console.log("getConsumptions output null");
+                }
+                _publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
                 handler(undefined);
             }
         });
@@ -133,8 +168,10 @@ function SmappeeAPI(settings) {
         };
         _get(url, fields, function(output) {
             if (output.length > 0) {
+                _publishMQTT(mqtt_baseTopic+"currentChargingSession",output);
                 handler(output);
             } else {
+                _publishMQTT(mqtt_baseTopic+"currentChargingSession","no session");
                 handler(undefined);
             }
         });
@@ -317,6 +354,52 @@ function SmappeeAPI(settings) {
             });   //end of GET request
         }); //end of access token request
     };
+
+    var _publishMQTT = function(topic, value){
+
+        const options = {
+            protocol: 'mqtt',
+            host: mqtt_server,
+            port: mqtt_port
+          };
+          
+        if (thisObject.debug) {
+            console.log('Connecting to mqtt');
+        }  
+        const client = mqtt.connect(options);
+
+
+
+        client.on('offline', () => {
+            console.log('Client is offline');
+        });
+        
+        client.on('reconnect', () => {
+            console.log('Reconnecting to MQTT broker');
+        });
+        
+        client.on('end', () => { 
+            console.log('Connection to MQTT broker ended');
+        });
+
+        client.on('connect', () => { 
+            console.log('Connected to MQTT broker');
+            client.publish(topic, value, { retain: true }, (err) => {
+                if (thisObject.debug) {
+                    console.log('Publishing to mqtt');
+                }
+                if (err) {
+                  console.error('Failed to publish message:', err);
+                } else {
+                    if (thisObject.debug) {
+                        console.log('Message published with retain flag set to true');
+                    }
+                }
+            });
+            client.end();
+        });
+        
+    }
 
 }
 
