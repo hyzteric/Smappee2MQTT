@@ -38,7 +38,7 @@ var smappee = new SmappeeAPI({
 module.exports = smappee;
 ```
 
-### In another nodejs file
+### In another nodejs file : test.js
 ```javascript
 var smappee = require('./my-smappee');
 
@@ -46,6 +46,8 @@ smappee.getServiceLocations(function(output) {
     console.log(output);
 })
 ```
+### To run your test.js file type : 
+> node test.js
 
 The following functions are available: 
 `getServiceLocations(callback)`, `getServiceLocationInfo(serviceLocationId, callback)`, ... 
@@ -86,3 +88,4 @@ smappee.getConsumptions("0000", smappee.AGGREGATION_TYPES.MONTHLY, from, to, fun
     console.log(output);
 })
 ```
+TIP: To convert the 5 minute interval from Energy [Wh] to Power [W], like the Smappee Dashboard reports these, you have to do these values times 12 as there are 12 x 5 minute intervals in an hour.
