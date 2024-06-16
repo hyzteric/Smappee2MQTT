@@ -1,9 +1,9 @@
 Please note : this fork is probably not working at this stage. I'm trying to edit it to get the refresh token working and add the EV Line charging session stuff. I did never code in Node JS so I'll see what I can do...
 Todo list : 
-- Store token in file
-- Read token from file
-- Request new token if token is expired
-- Implement EV line API requests
+- Store token in file ✅
+- Read token from file ✅
+- Request new token if token is expired ✅
+- Implement EV line API requests ✅ (read current session only)
 - Send data to MQTT server
 
 # Smappee-NodeJS
