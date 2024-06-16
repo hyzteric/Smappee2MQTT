@@ -120,6 +120,26 @@ function SmappeeAPI(settings) {
         _post(url, "{'duration': " + duration + "}", handler);
     };
 
+    this.getCurrentChargingSession = function(chargingStationSN, handler) {
+        var url = 'https://app1pub.smappee.net/dev/v3/chargingstations/' + chargingStationSN + '/sessions';
+
+        if (thisObject.debug) {
+            console.log("getCurrentChargingSession url : "+ url);
+        }
+
+        var fields = {
+            active: true,
+            range:"1635721200000"
+        };
+        _get(url, fields, function(output) {
+            if (output.length > 0) {
+                handler(output);
+            } else {
+                handler(undefined);
+            }
+        });
+    };
+
 
     // HELPER METHODS ++++++++++++++++++++++++++++++++++++++++
   
@@ -129,31 +149,68 @@ function SmappeeAPI(settings) {
         let timestampNow = Date.now();
         var timestampNowSeconds = timestampNow/1000;
 
+        //Try to read Access token from file
         if (fs.existsSync('./token.json') && fs.existsSync('./tokenBirth.txt')) {
             tokenFile=fs.readFileSync('./token.json');
             existingToken = JSON.parse(tokenFile);
             if (thisObject.debug) {
-                console.log("existingToken : "+tokenFile);
+                console.log("Existing Token found : "+tokenFile);
             }
             var tokenBirth=fs.readFileSync('./tokenBirth.txt');
             var tokenDeath = Number(tokenBirth)+existingToken.expires_in-60; //token death with 60sec threshold
             if (tokenDeath<timestampNowSeconds){
-                //token expired or less than 60 secs remaining
+                //Token expired or less than 60 secs remaining; try to Refresh Token
                 if (thisObject.debug) {
                     console.log("Token expired : "+tokenDeath);
                     console.log("Time is now : "+timestampNowSeconds);
-                    //TODO: Request refresh token instead of new token
-                    console.log("TODO : Must request refresh token instead of new token");
+                    console.log("Making oAuth call with refresh token : "+existingToken.refresh_token);
                 }
-                accessToken=null;
+
+                var body = {
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    refresh_token: existingToken.refresh_token,
+                    grant_type: 'refresh_token'
+                };
+    
+                var options =  {
+                    url: 'https://app1pub.smappee.net/dev/v3/oauth2/token',
+                    headers: {
+                        'Host': 'app1pub.smappee.net'
+                    },
+                    form: body
+                };
+    
+                request.post(options, function (err, httpResponse, body) {
+                    if (err) {
+                        return console.error('Request failed:', err);
+                    }
+                    if (thisObject.debug) {
+                        console.log('Server responded with:', body);
+                    }
+    
+                    accessToken = JSON.parse(body);
+                
+                    fs.writeFileSync('./token.json', body, err => {
+                        if (err) {
+                            console.error('Could not save token to file', err);
+                        } 
+                    });
+    
+                    fs.writeFileSync('./tokenBirth.txt', timestampNowSeconds.toString(), err => {
+                        if (err) {
+                            console.error('Could not save token birth to file', err);
+                        } 
+                    });
+                });
             } else {
+                //Using existing Token from file
                 accessToken=existingToken;
             }
         } 
 
-        if (accessToken!=null){
-            handler(accessToken);
-        } else {
+        if (accessToken==null){
+            //Still got no Token, requesting a new one
             var body = {
                 client_id: clientId,
                 client_secret: clientSecret,
@@ -186,21 +243,22 @@ function SmappeeAPI(settings) {
             
                 fs.writeFileSync('./token.json', body, err => {
                     if (err) {
-                        console.error(err);
-                    } else {
-                        // file written successfully
-                    }
+                        console.error('Could not save token to file', err);
+                    } 
                 });
 
                 fs.writeFileSync('./tokenBirth.txt', timestampNowSeconds.toString(), err => {
                     if (err) {
-                        console.error(err);
-                    } else {
-                        // file written successfully
-                    }
+                        console.error('Could not save token birth to file', err);
+                    } 
                 });
-                handler(accessToken);
             });
+        }
+
+        if (accessToken!=null){
+            handler(accessToken);
+        } else {
+            return console.error('Could not get valid token'); 
         }
     };
 
@@ -224,7 +282,7 @@ function SmappeeAPI(settings) {
                     return console.error('Request failed:', err);
                 }
                 if (thisObject.debug) {
-                    console.log('Server responded with:', body);
+                    //console.log('Server responded with:', body);
                 }
 
                 handler({status: 'OK'});
@@ -254,7 +312,6 @@ function SmappeeAPI(settings) {
                 if (thisObject.debug) {
                     console.log('Server responded with:', body);
                 }
-
                 var output = JSON.parse(body);
                 handler(output);
             });   //end of GET request
