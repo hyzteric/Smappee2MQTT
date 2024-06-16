@@ -4,7 +4,7 @@ Todo list :
 - Read token from file ✅
 - Request new token if token is expired ✅
 - Implement EV line API requests ✅ (read current session only)
-- Send data to MQTT server
+- Send data to MQTT server : partial
 
 # Smappee-NodeJS
 Smappee nodejs project to read smappee data.
@@ -28,7 +28,11 @@ var smappee = new SmappeeAPI({
     clientSecret: "xxx",
 
     username: "xxx",
-    password: "xxx"
+    password: "xxx",
+
+    mqtt_server: "xxx",
+    mqtt_port: "xxx",
+    mqtt_baseTopic : "smappee/"
 });
 
 module.exports = smappee;
