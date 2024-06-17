@@ -168,7 +168,8 @@ function SmappeeAPI(settings) {
         };
         _get(url, fields, function(output) {
             if (output.length > 0) {
-                _publishMQTT(mqtt_baseTopic+"currentChargingSession",output);
+                _publishMQTT(mqtt_baseTopic+"currentChargingSession",JSON.stringify(output));
+                //_publishMQTT(mqtt_baseTopic+"currentChargingSession",output);
                 handler(output);
             } else {
                 _publishMQTT(mqtt_baseTopic+"currentChargingSession","no session");
