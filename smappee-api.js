@@ -180,7 +180,7 @@ function SmappeeAPI(settings) {
                 _publishMQTT(mqtt_baseTopic+"currentChargingSession",apiResponse);
                 handler(apiResponse);
             } else {
-                _publishMQTT(mqtt_baseTopic+"currentChargingSession","no session");
+                _publishMQTT(mqtt_baseTopic+"currentChargingSession","{\"id\":-1}");
                 handler(undefined);
             }
         });
