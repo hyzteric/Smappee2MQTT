@@ -172,6 +172,11 @@ function SmappeeAPI(settings) {
                 if (apiResponse.startsWith("[")){
                     apiResponse = apiResponse.substring(1, apiResponse.length-1);//remove invalid [ ] around response
                 } 
+                let timestampNow = Date.now();
+                var timestampNowSeconds = timestampNow/1000;
+                apiResponse=apiResponse.substring(0, apiResponse.length-1);
+                apiResponse+=",\"timestamp\":"+timestampNowSeconds.toString()+"}";
+                console.log("apiResponse with timestamp : "+ apiResponse);
                 _publishMQTT(mqtt_baseTopic+"currentChargingSession",apiResponse);
                 handler(apiResponse);
             } else {
