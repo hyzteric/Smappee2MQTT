@@ -7,7 +7,7 @@ Todo list :
 - Send data to MQTT server : partial
 
 # Smappee-NodeJS
-Smappee nodejs project to read smappee data.
+This nodejs project allows to read data from the smappee API and send it to an MQTT server. Tested with Mosquitto MQTT server and openHab to import Electric Car (EV) charging session status and house consumption.
 
 Based on https://support.smappee.com/hc/en-us/articles/202153935-Where-can-I-find-the-API-documentation-
 
