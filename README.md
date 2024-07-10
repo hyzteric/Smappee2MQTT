@@ -5,6 +5,7 @@ Todo list :
 - Request new token if token is expired ✅
 - Implement EV line API requests ✅ (read current session only)
 - Send data to MQTT server : partial
+- Remove deprecated dependency : https://github.com/request/request/issues/3142
 
 # Smappee2MQTT (with NodeJS)
 This nodejs project allows to read data from the smappee API and send it to an MQTT server. Tested with Mosquitto MQTT server and openHab to import Electric Car (EV) charging session status and house consumption.
