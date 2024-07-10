@@ -6,14 +6,15 @@ Todo list :
 - Implement EV line API requests ✅ (read current session only)
 - Send data to MQTT server : partial
 
-# Smappee-NodeJS
+# Smappee2MQTT (with NodeJS)
 This nodejs project allows to read data from the smappee API and send it to an MQTT server. Tested with Mosquitto MQTT server and openHab to import Electric Car (EV) charging session status and house consumption.
 
 Based on https://support.smappee.com/hc/en-us/articles/202153935-Where-can-I-find-the-API-documentation-
 
 ## Installation
 ```bash
-npm install smappee-nodejs --save
+#this below actually installs the original forked project, I don't know yet how to publish mine
+#npm install smappee-nodejs --save
 ```
 
 ## Usage
