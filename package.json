@@ -1,6 +1,7 @@
 {
-  "name": "smappee-nodejs",
+  "name": "smappee2mqtt",
   "version": "2.0",
+  "description": "Connect to the Smappee API and push the data into your MQTT server",
   "main": "./smappee-api.js",
   "author": "hyzteric",
   "keywords": [
@@ -8,12 +9,14 @@
     "energy monitoring",
 	"mqtt"
   ],
+  "license": "OSL-3.0",
+  "homepage": "https://github.com/hyzteric/Smappee2MQTT/",
   "repository": {
     "type": "git",
-    "url": "git://github.com/hyzteric/Smappee-NodeJS.git"
+    "url": "git://github.com/hyzteric/Smappee2MQTT.git"
   },
   "bugs": {
-    "url": "http://github.com/hyzteric/Smappee-NodeJS/issues"
+    "url": "https://github.com/hyzteric/Smappee2MQTT/issues"
   },
   "dependencies": {
     "moment": "^2.10.6",
