@@ -387,6 +387,18 @@ function SmappeeAPI(settings) {
             console.log('Reconnecting to MQTT broker');
         });
         
+        client.on('close', () => {
+            console.log('Clien MQTT received closed event');
+        });
+        
+        client.on('disconnect', () => {
+            console.log('Clien MQTT received closed event');
+        });
+
+        client.on('error', (err) => { 
+            console.log('MQTT error: ',err);
+        });
+
         client.on('end', () => { 
             console.log('Connection to MQTT broker ended');
         });
@@ -398,7 +410,7 @@ function SmappeeAPI(settings) {
                     console.log('Publishing to mqtt');
                 }
                 if (err) {
-                  console.error('Failed to publish message:', err);
+                  console.error('Failed to publish message: ', err);
                 } else {
                     if (thisObject.debug) {
                         console.log('Message published with retain flag set to true');
