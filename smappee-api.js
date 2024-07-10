@@ -232,7 +232,7 @@ function SmappeeAPI(settings) {
                         return console.error('Request failed:', err);
                     }
                     if (thisObject.debug) {
-                        console.log('Server responded with:', body);
+                        //console.log('Server responded with:', body);
                     }
     
                     accessToken = JSON.parse(body);
@@ -282,7 +282,7 @@ function SmappeeAPI(settings) {
                     return console.error('Request failed:', err);
                 }
                 if (thisObject.debug) {
-                    console.log('Server responded with:', body);
+                    //console.log('Server responded with:', body);
                 }
 
                 accessToken = JSON.parse(body);
@@ -356,7 +356,7 @@ function SmappeeAPI(settings) {
                     return console.error('Request failed:', err);
                 }
                 if (thisObject.debug) {
-                    console.log('Server responded with:', body);
+                    //console.log('Server responded with:', body);
                 }
                 var output = JSON.parse(body);
                 handler(output);
