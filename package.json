@@ -1,6 +1,6 @@
 {
   "name": "smappee2mqtt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Connect to the Smappee API and push the data into your MQTT server",
   "main": "./smappee-api.js",
   "author": "hyzteric",
