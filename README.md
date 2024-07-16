@@ -14,17 +14,17 @@ Based on https://support.smappee.com/hc/en-us/articles/202153935-Where-can-I-fin
 
 ## Installation
 ```bash
-#this below actually installs the original forked project, I don't know yet how to publish mine
-#npm install smappee-nodejs --save
+npm install smappee2mqtt --save
 ```
 
 ## Usage
 ### Create a new file 'my-smappee.js'
 ```javascript
-var SmappeeAPI = require('smappee-nodejs');
+var SmappeeAPI = require('smappee2mqtt');
 
 var smappee = new SmappeeAPI({
     debug: false,
+	noAPIcall: false,
 
     clientId: "xxx",
     clientSecret: "xxx",
@@ -90,4 +90,26 @@ smappee.getConsumptions("0000", smappee.AGGREGATION_TYPES.MONTHLY, from, to, fun
     console.log(output);
 })
 ```
+
+### getLatestConsumption(serviceLocationId, callback)
+Get a list of latest consumptions 
+
+```javascript
+var smappee = require('./my-smappee');
+
+smappee.getLatestConsumption(serviceLocationId, function(output) {
+	console.log("getLatestConsumption (multiply WH by 12 if aggregate by 5 minutes since 5*12 = one hour to get Watts) : ",output);
+})
+```
+
+### getCurrentChargingSession(serviceLocationId,aggregation, from, to, callback)
+Get a list of current charging session (will return -1 if no car is charging)
+
+```javascript
+var smappee = require('./my-smappee');
+smappee.getCurrentChargingSession(chargingStationSN, function(output){
+	console.log(output);
+})
+```
+
 TIP: To convert the 5 minute interval from Energy [Wh] to Power [W], like the Smappee Dashboard reports these, you have to do these values times 12 as there are 12 x 5 minute intervals in an hour.
