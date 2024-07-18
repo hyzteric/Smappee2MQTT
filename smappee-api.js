@@ -79,23 +79,68 @@ function SmappeeAPI(settings) {
         };
         //_get(url, fields, handler);
         _get(url, fields, function(output) {
-            if (thisObject.debug) {
-                console.log("getConsumptions output : "+ JSON.stringify(output));
-            }
+			try {
+				var strOutput = JSON.stringify(output);
+				if (thisObject.debug) {
+					console.log("getConsumptions output : "+ strOutput);
+				}
+				if (strOutput.length>0) {
+					if (thisObject.debug) {
+						console.log("publishing getConsumptions output to mqtt");
+					}
+					_publishMQTT(mqtt_baseTopic+"consumptions",JSON.stringify(output));
+					handler(output);
+				} else {
+					if (thisObject.debug) {
+						console.log("getConsumptions output null");
+					}
+					_publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
+					handler(undefined);
+				}
+			} catch (e) {
+				if (thisObject.debug) {
+					console.log("getConsumptions output null");
+				}
+				_publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
+				handler(undefined);
+			}
+        });
+    };
 
-            if (output!=null) {
-                if (thisObject.debug) {
-                    console.log("publishing getConsumptions output to mqtt");
-                }
-                _publishMQTT(mqtt_baseTopic+"consumptions",JSON.stringify(output));
-                handler(output);
-            } else {
-                if (thisObject.debug) {
-                    console.log("getConsumptions output null");
-                }
-                _publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
-                handler(undefined);
-            }
+    this.getLatestConsumption = function(serviceLocationId, handler) {
+        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/consumption';
+        var fields = {
+            aggregation: this.AGGREGATION_TYPES.MINUTES,
+            from: moment().subtract(20, 'minutes').utc().valueOf(),
+            to: moment().add(5, 'minutes').utc().valueOf()
+        };
+        _get(url, fields, function(output) {
+            try {
+				var strOutput = JSON.stringify(output.consumptions[output.consumptions.length - 1]);
+				if (thisObject.debug) {
+					console.log("getConsumptions output 1 : "+ JSON.stringify(output));
+				}
+				if (strOutput.length > 0) {
+					if (thisObject.debug) {
+						console.log("publishing getConsumptions output to mqtt");
+					}
+					_publishMQTT(mqtt_baseTopic+"consumptions",strOutput);
+					handler(output.consumptions[output.consumptions.length - 1]);
+				} else {
+					if (thisObject.debug) {
+						console.log("getConsumptions output is null");
+					}
+					 console.log("getConsumptions avant publish ");
+					_publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
+					handler(undefined);
+				}
+			} catch (e) {
+				if (thisObject.debug) {
+					console.log("getConsumptions output null");
+				}
+				_publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
+				handler(undefined);
+			}
         });
     };
 
@@ -130,62 +175,41 @@ function SmappeeAPI(settings) {
         var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/actuator/' + actuatorId + '/off';
         _post(url, "{'duration': " + duration + "}", handler);
     };
-	
-	this.getLatestConsumption = function(serviceLocationId, handler) {
-        var url = 'https://app1pub.smappee.net/dev/v3/servicelocation/' + serviceLocationId + '/consumption';
-        var fields = {
-            aggregation: this.AGGREGATION_TYPES.MINUTES,
-            from: moment().subtract(20, 'minutes').utc().valueOf(),
-            to: moment().add(5, 'minutes').utc().valueOf()
-        };
-        _get(url, fields, function(output) {
-            if (thisObject.debug) {
-                console.log("getConsumptions output : "+ JSON.stringify(output));
-            }
 
-            //if (output.consumptions.length > 0) {
-			if (output !=null) {
-                if (thisObject.debug) {
-                    console.log("publishing getConsumptions output to mqtt");
-                }
-                _publishMQTT(mqtt_baseTopic+"consumptions",JSON.stringify(output.consumptions[output.consumptions.length - 1]));
-                handler(output.consumptions[output.consumptions.length - 1]);
-            } else {
-                if (thisObject.debug) {
-                    console.log("getConsumptions output null");
-                }
-                _publishMQTT(mqtt_baseTopic+"consumptions","no consumptions");
-                handler(undefined);
-            }
-        });
-    };
     this.getCurrentChargingSession = function(chargingStationSN, handler) {
         var url = 'https://app1pub.smappee.net/dev/v3/chargingstations/' + chargingStationSN + '/sessions';
+
+        if (thisObject.debug) {
+            console.log("getCurrentChargingSession url : "+ url);
+        }
+
         var fields = {
             active: true,
             range:"1635721200000"
         };
         _get(url, fields, function(output) {
-            let timestampNow = Date.now();
-            var timestampNowSeconds = timestampNow/1000;
-			var emptyResponse = "{\"id\":-1,\"timestamp\":"+timestampNowSeconds+"}";
-			if (output!=null) {
-                var apiResponse = JSON.stringify(output);
-				if (apiResponse.startsWith("[")){
-                    apiResponse = apiResponse.substring(1, apiResponse.length-1);//remove invalid [ ] around response
-                } 
-                if (apiResponse.length>0){
-					//apiResponse=apiResponse.substring(0, apiResponse.length-1);
+            try {
+				var strOutput = JSON.stringify(output);
+				if (strOutput.length>0) {
+					var apiResponse = strOutput;
+					if (apiResponse.startsWith("[")){
+						apiResponse = apiResponse.substring(1, apiResponse.length-1);//remove invalid [ ] around response
+					} 
+					let timestampNow = Date.now();
+					var timestampNowSeconds = timestampNow/1000;
+					apiResponse=apiResponse.substring(0, apiResponse.length-1);
 					apiResponse+=",\"timestamp\":"+timestampNowSeconds.toString()+"}";
+					console.log("apiResponse with timestamp : "+ apiResponse);
+					_publishMQTT(mqtt_baseTopic+"currentChargingSession",apiResponse);
+					handler(apiResponse);
 				} else {
-					apiResponse=emptyResponse;
-				}                
-                _publishMQTT(mqtt_baseTopic+"currentChargingSession",apiResponse);
-                handler(apiResponse);
-            } else {
-                _publishMQTT(mqtt_baseTopic+"currentChargingSession",emptyResponse);
-                handler(undefined);
-            }
+					_publishMQTT(mqtt_baseTopic+"currentChargingSession","{\"id\":-1}");
+					handler(undefined);
+				}
+			} catch (e) {
+				_publishMQTT(mqtt_baseTopic+"currentChargingSession","{\"id\":-1}");
+				handler(undefined);
+			}
         });
     };
 
@@ -303,6 +327,7 @@ function SmappeeAPI(settings) {
                 });
             });
         }
+
         if (accessToken!=null){
             handler(accessToken);
         } else {
@@ -369,6 +394,7 @@ function SmappeeAPI(settings) {
 				});   //end of GET request
 			}); //end of access token request
 		}
+
     };
 
 
@@ -417,6 +443,8 @@ function SmappeeAPI(settings) {
 				process.exit();
 			});
 
+
+			console.log('Connected to MQTT broker');
 			await client.publish(topic, value, { retain: true }, (err) => {
 				if (thisObject.debug) {
 					console.log('Publishing to mqtt');
