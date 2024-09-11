@@ -190,7 +190,7 @@ function SmappeeAPI(settings) {
         _get(url, fields, function(output) {
             try {
 				var strOutput = JSON.stringify(output);
-				if (strOutput.length>0) {
+				if (strOutput.length>0 && strOutput!="[]") {
 					var apiResponse = strOutput;
 					if (apiResponse.startsWith("[")){
 						apiResponse = apiResponse.substring(1, apiResponse.length-1);//remove invalid [ ] around response
@@ -199,7 +199,9 @@ function SmappeeAPI(settings) {
 					var timestampNowSeconds = timestampNow/1000;
 					apiResponse=apiResponse.substring(0, apiResponse.length-1);
 					apiResponse+=",\"timestamp\":"+timestampNowSeconds.toString()+"}";
-					console.log("apiResponse with timestamp : "+ apiResponse);
+					if (thisObject.debug) {
+                        console.log("apiResponse with timestamp : "+ apiResponse);
+                    }
 					_publishMQTT(mqtt_baseTopic+"currentChargingSession",apiResponse);
 					handler(apiResponse);
 				} else {
